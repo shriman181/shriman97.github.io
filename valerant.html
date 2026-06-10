@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Valerant — AI for eDiscovery & Digital Forensics</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root{
+  --ink:#14181F;
+  --ink-soft:#1f2530;
+  --parchment:#F7F4ED;
+  --parchment-dim:#EDE8DC;
+  --redact:#C0392B;
+  --teal:#2D6E6B;
+  --gray:#6B7178;
+  --line: rgba(20,24,31,0.12);
+  --line-light: rgba(247,244,237,0.18);
+  --serif: 'Source Serif 4', Georgia, serif;
+  --sans: 'Inter', -apple-system, sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+html{ scroll-behavior:smooth; }
+body{
+  font-family:var(--sans);
+  background:var(--parchment);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.6;
+}
+a{ color:inherit; text-decoration:none; }
+.wrap{ max-width:1120px; margin:0 auto; padding:0 32px; }
+@media (max-width:640px){ .wrap{ padding:0 20px; } }
+
+/* NAV */
+.nav{
+  position:sticky; top:0; z-index:50;
+  background:rgba(247,244,237,0.92);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.nav-inner{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:20px 32px; max-width:1120px; margin:0 auto;
+}
+.logo{ font-family:var(--serif); font-weight:700; font-size:1.35rem; letter-spacing:0.01em; }
+.logo .dot{ color:var(--redact); }
+.nav-links{ display:flex; gap:36px; align-items:center; }
+.nav-links a{ font-size:0.92rem; font-weight:500; letter-spacing:0.02em; }
+.nav-links a:not(.nav-cta):hover{ color:var(--redact); }
+.nav-cta{
+  font-family:var(--mono); font-size:0.8rem;
+  background:var(--ink); color:var(--parchment);
+  padding:10px 18px; border-radius:2px; letter-spacing:0.04em;
+  transition:background 0.2s ease;
+}
+.nav-cta:hover{ background:var(--redact); }
+.nav-toggle{ display:none; }
+
+@media (max-width:760px){
+  .nav-links{
+    position:fixed; top:64px; left:0; right:0; bottom:0;
+    background:var(--parchment);
+    flex-direction:column; align-items:flex-start;
+    padding:32px; gap:24px;
+    transform:translateX(100%);
+    transition:transform 0.25s ease;
+  }
+  .nav-links.open{ transform:translateX(0); }
+  .nav-toggle{
+    display:block; background:none; border:none;
+    font-family:var(--mono); font-size:0.85rem; cursor:pointer; color:var(--ink);
+  }
+  .nav-cta{ width:100%; text-align:center; }
+}
+
+/* HERO */
+.hero{ padding:100px 0 80px; border-bottom:1px solid var(--line); }
+.hero-grid{ display:grid; grid-template-columns:1.1fr 0.9fr; gap:64px; align-items:center; }
+@media (max-width:860px){ .hero-grid{ grid-template-columns:1fr; gap:48px; } }
+
+.eyebrow{
+  font-family:var(--mono); font-size:0.78rem; letter-spacing:0.18em;
+  text-transform:uppercase; color:var(--redact);
+  display:flex; align-items:center; gap:10px; margin-bottom:24px;
+}
+.eyebrow::before{ content:''; width:28px; height:1px; background:var(--redact); display:inline-block; }
+
+.hero h1{
+  font-family:var(--serif); font-size:clamp(2.4rem, 5.4vw, 4.1rem);
+  line-height:1.08; font-weight:600; letter-spacing:-0.01em; margin-bottom:24px;
+}
+.redact{ position:relative; display:inline-block; }
+.redact .bar{
+  position:absolute; inset:0; background:var(--ink);
+  transform-origin:left; animation:reveal 1.4s 0.6s cubic-bezier(.77,0,.18,1) forwards;
+}
+@keyframes reveal{ to{ transform:scaleX(0); } }
+@media (prefers-reduced-motion: reduce){ .redact .bar{ animation:none; transform:scaleX(0); } }
+
+.hero p.lead{ font-size:1.08rem; color:var(--ink-soft); max-width:46ch; margin-bottom:36px; }
+.hero-actions{ display:flex; gap:16px; flex-wrap:wrap; margin-bottom:48px; }
+
+.btn{
+  font-family:var(--mono); font-size:0.82rem; letter-spacing:0.04em;
+  padding:14px 26px; border-radius:2px; border:1px solid var(--ink);
+  transition:all 0.2s ease; display:inline-block;
+}
+.btn-primary{ background:var(--ink); color:var(--parchment); }
+.btn-primary:hover{ background:var(--redact); border-color:var(--redact); }
+.btn-ghost{ background:transparent; color:var(--ink); }
+.btn-ghost:hover{ border-color:var(--redact); color:var(--redact); }
+
+.hero-stats{ display:flex; gap:40px; padding-top:32px; border-top:1px solid var(--line); }
+.stat-num{ font-family:var(--serif); font-size:2rem; font-weight:600; color:var(--redact); line-height:1; }
+.stat-label{ font-family:var(--mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--gray); margin-top:8px; }
+
+/* doc stack */
+.doc-stack{ position:relative; height:420px; }
+.doc-card{
+  position:absolute; background:#fff; border:1px solid var(--line); border-radius:3px;
+  box-shadow:0 18px 40px -20px rgba(20,24,31,0.35);
+  padding:22px 24px; font-family:var(--mono); font-size:0.74rem; line-height:1.9; color:var(--ink-soft);
+}
+.doc-card .doc-head{
+  display:flex; justify-content:space-between; font-size:0.68rem; color:var(--gray);
+  border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:10px; letter-spacing:0.06em;
+}
+.doc-card .line{ height:8px; background:var(--parchment-dim); border-radius:1px; margin-bottom:8px; }
+.doc-card .line.short{ width:55%; }
+.doc-card .line.tag{ display:inline-block; height:18px; padding:0 8px; line-height:18px; font-size:0.65rem; border-radius:2px; margin-right:6px; }
+.tag-relevant{ background:rgba(45,110,107,0.12); color:var(--teal); }
+.tag-privileged{ background:rgba(192,57,43,0.12); color:var(--redact); }
+.tag-redacted{ background:var(--ink); color:var(--parchment); }
+.doc-1{ width:78%; top:0; left:0; transform:rotate(-3deg); z-index:2; }
+.doc-2{ width:72%; bottom:0; right:0; transform:rotate(2deg); z-index:1; }
+@media (max-width:860px){ .doc-stack{ height:340px; } }
+
+/* SECTIONS */
+.section{ padding:88px 0; border-bottom:1px solid var(--line); }
+.section.dark{ background:var(--ink); color:var(--parchment); border-bottom:none; }
+.section.dark .gray{ color:rgba(247,244,237,0.6); }
+
+.section-head{ display:grid; grid-template-columns:1fr 1.4fr; gap:48px; margin-bottom:56px; align-items:end; }
+@media (max-width:760px){ .section-head{ grid-template-columns:1fr; gap:20px; } }
+.section-head h2{ font-family:var(--serif); font-size:clamp(1.9rem, 3.6vw, 2.6rem); font-weight:600; line-height:1.15; }
+.section-head .desc{ color:var(--gray); font-size:1rem; max-width:52ch; }
+.section.dark .section-head .desc{ color:rgba(247,244,237,0.65); }
+
+.exhibit-num{
+  font-family:var(--mono); font-size:0.78rem; letter-spacing:0.14em;
+  color:var(--redact); text-transform:uppercase; margin-bottom:14px; display:block;
+}
+
+/* cost grid */
+.cost-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); }
+.cost-card{ background:var(--parchment); padding:36px 32px; }
+.cost-card .figure{ font-family:var(--serif); font-size:2.6rem; font-weight:600; margin-bottom:8px; }
+.cost-card .figure.red{ color:var(--redact); }
+.cost-card .figure.teal{ color:var(--teal); }
+.cost-card h3{ font-size:0.95rem; font-weight:600; margin-bottom:10px; }
+.cost-card p{ color:var(--gray); font-size:0.92rem; }
+@media (max-width:760px){ .cost-grid{ grid-template-columns:1fr; } }
+
+/* modules */
+.modules{ display:grid; gap:0; }
+.module{ display:grid; grid-template-columns:120px 1fr 1.2fr; gap:32px; padding:36px 0; border-top:1px solid var(--line); align-items:start; }
+.module:last-child{ border-bottom:1px solid var(--line); }
+.module .mod-id{ font-family:var(--mono); font-size:0.85rem; color:var(--redact); letter-spacing:0.05em; }
+.module h3{ font-family:var(--serif); font-size:1.35rem; font-weight:600; }
+.module p{ color:var(--gray); font-size:0.95rem; max-width:48ch; }
+@media (max-width:760px){ .module{ grid-template-columns:1fr; gap:10px; } }
+
+/* workflow */
+.workflow{ display:grid; grid-template-columns:repeat(4,1fr); gap:24px; }
+@media (max-width:860px){ .workflow{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:540px){ .workflow{ grid-template-columns:1fr; } }
+.wf-step{ border:1px solid var(--line); padding:28px 22px; background:var(--parchment); position:relative; }
+.section.dark .wf-step{ border-color:var(--line-light); background:var(--ink-soft); }
+.wf-step .wf-num{ font-family:var(--mono); font-size:0.72rem; color:var(--redact); letter-spacing:0.1em; margin-bottom:18px; display:block; }
+.wf-step h4{ font-size:1rem; font-weight:600; margin-bottom:8px; }
+.wf-step p{ font-size:0.88rem; color:var(--gray); }
+.section.dark .wf-step p{ color:rgba(247,244,237,0.6); }
+
+/* founder */
+.founder{ display:grid; grid-template-columns:280px 1fr; gap:64px; align-items:start; }
+@media (max-width:760px){ .founder{ grid-template-columns:1fr; gap:36px; } }
+.founder-card{ border:1px solid var(--line); background:#fff; padding:28px; }
+.founder-photo{
+  width:100%; aspect-ratio:1; background:var(--ink); border-radius:2px; margin-bottom:20px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--serif); font-size:3.5rem; color:var(--parchment); font-weight:600;
+}
+.founder-card h3{ font-family:var(--serif); font-size:1.3rem; font-weight:600; margin-bottom:4px; }
+.founder-card .role{ font-family:var(--mono); font-size:0.74rem; color:var(--redact); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:18px; }
+.founder-meta{ font-size:0.85rem; color:var(--gray); }
+.founder-meta div{ display:flex; justify-content:space-between; padding:8px 0; border-top:1px solid var(--line); }
+.founder-meta div:first-child{ border-top:none; }
+.founder-bio p{ margin-bottom:18px; color:var(--ink-soft); font-size:1rem; }
+.founder-bio p:first-of-type{ font-family:var(--serif); font-size:1.25rem; line-height:1.5; color:var(--ink); }
+.pull-quote{
+  border-left:2px solid var(--redact); padding-left:24px; margin:32px 0;
+  font-family:var(--serif); font-size:1.2rem; font-style:italic; color:var(--ink-soft);
+}
+
+/* cta band */
+.cta-band{ padding:80px 0; text-align:center; }
+.cta-band h2{ font-family:var(--serif); font-size:clamp(1.8rem,4vw,2.6rem); font-weight:600; margin-bottom:20px; }
+.cta-band p{ color:rgba(247,244,237,0.65); margin-bottom:32px; max-width:50ch; margin-left:auto; margin-right:auto; }
+.cta-band .hero-actions{ justify-content:center; }
+.section.dark .btn-ghost{ border-color:rgba(247,244,237,0.4); color:var(--parchment); }
+.section.dark .btn-ghost:hover{ border-color:var(--redact); color:var(--redact); }
+.section.dark .btn-primary{ background:var(--parchment); color:var(--ink); border-color:var(--parchment); }
+.section.dark .btn-primary:hover{ background:var(--redact); color:var(--parchment); border-color:var(--redact); }
+
+/* footer */
+footer{ padding:48px 0; font-size:0.85rem; color:var(--gray); }
+.footer-grid{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px; }
+.footer-links{ display:flex; gap:28px; }
+.footer-links a:hover{ color:var(--redact); }
+
+/* compliance strip */
+.compliance-strip{
+  display:flex; gap:40px; flex-wrap:wrap; padding:28px 0;
+  font-family:var(--mono); font-size:0.78rem; letter-spacing:0.06em; color:var(--gray);
+  border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+}
+@media (max-width:640px){ .compliance-strip{ gap:18px 28px; font-size:0.7rem; } }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#top" class="logo">valerant<span class="dot">.</span></a>
+    <button class="nav-toggle" id="navToggle">menu</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#platform">Platform</a>
+      <a href="#founder">Founder</a>
+      <a href="#contact" class="nav-cta">Request a demo</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">eDiscovery, automated</div>
+      <h1>
+        Document review
+        <span class="redact">
+          shouldn't cost <span class="bar"></span>$500/hour
+        </span>.
+      </h1>
+      <p class="lead">
+        Valerant scores document relevance, flags privilege, automates custodian
+        collection, and generates defensible privilege logs — work that takes
+        junior associates weeks, in minutes, with a full chain of custody.
+      </p>
+      <div class="hero-actions">
+        <a href="#contact" class="btn btn-primary">Request a demo</a>
+        <a href="#platform" class="btn btn-ghost">See the platform</a>
+      </div>
+      <div class="hero-stats">
+        <div>
+          <div class="stat-num">70%</div>
+          <div class="stat-label">fewer docs needing manual review</div>
+        </div>
+        <div>
+          <div class="stat-num">5×</div>
+          <div class="stat-label">faster first-pass review</div>
+        </div>
+        <div>
+          <div class="stat-num">100%</div>
+          <div class="stat-label">audit-logged decisions</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-stack">
+      <div class="doc-card doc-1">
+        <div class="doc-head">
+          <span>EXHIBIT 0114 — EMAIL</span>
+          <span>SHA-256 ✓</span>
+        </div>
+        <div class="line" style="width:90%"></div>
+        <div class="line" style="width:75%"></div>
+        <div class="line short"></div>
+        <div style="margin-top:12px;">
+          <span class="line tag tag-relevant">Relevance 0.94</span>
+          <span class="line tag tag-privileged">Priv. flag</span>
+        </div>
+      </div>
+      <div class="doc-card doc-2">
+        <div class="doc-head">
+          <span>EXHIBIT 0089 — MEMO</span>
+          <span>CUSTODIAN: R. SHAH</span>
+        </div>
+        <div class="line" style="width:85%"></div>
+        <div class="line" style="width:60%"></div>
+        <div class="line" style="width:70%"></div>
+        <div style="margin-top:12px;">
+          <span class="line tag tag-relevant">Relevance 0.61</span>
+          <span class="line tag tag-redacted">PII redacted ×2</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="compliance-strip">
+    <span>FRCP 26(f) READY</span>
+    <span>SOC 2 TYPE II (IN PROGRESS)</span>
+    <span>HUMAN-IN-THE-LOOP REVIEW</span>
+    <span>FULL AUDIT TRAIL</span>
+    <span>ON-PREM &amp; CLOUD DEPLOYMENT</span>
+  </div>
+</div>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <span class="exhibit-num">Exhibit A — The cost problem</span>
+        <h2>The bill for reading documents is the bill.</h2>
+      </div>
+      <p class="desc">
+        In a mid-sized litigation matter, document review can consume 70% of
+        total discovery cost — almost all of it billed at junior-associate
+        rates for work that is fundamentally pattern recognition.
+      </p>
+    </div>
+
+    <div class="cost-grid">
+      <div class="cost-card">
+        <div class="figure red">$500/hr</div>
+        <h3>Junior associate review</h3>
+        <p>The standard billing rate for first-pass tagging — relevance, privilege, and issue coding — at most U.S. firms.</p>
+      </div>
+      <div class="cost-card">
+        <div class="figure">10,000+</div>
+        <h3>Documents per custodian</h3>
+        <p>A single custodian's mailbox in a mid-size matter routinely produces tens of thousands of documents to review.</p>
+      </div>
+      <div class="cost-card">
+        <div class="figure teal">Minutes</div>
+        <h3>With Valerant</h3>
+        <p>Relevance scoring, privilege flagging, and a draft privilege log are produced for the same set — ready for attorney sign-off.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="platform">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <span class="exhibit-num">Exhibit B — The platform</span>
+        <h2>Four modules. One chain of custody.</h2>
+      </div>
+      <p class="desc">
+        Valerant covers the discovery pipeline from collection to production —
+        every action timestamped, hashed, and logged for defensibility.
+      </p>
+    </div>
+
+    <div class="modules">
+      <div class="module">
+        <div class="mod-id">MOD.01</div>
+        <h3>Relevance &amp; issue scoring</h3>
+        <p>
+          Transformer-based models score every document against your matter's
+          issue tags, with a confidence score and plain-language reasoning an
+          attorney can verify in seconds — not re-derive from scratch.
+        </p>
+      </div>
+      <div class="module">
+        <div class="mod-id">MOD.02</div>
+        <h3>Custodian data collection</h3>
+        <p>
+          Automated collectors pull from email, chat, cloud storage, and
+          devices, preserving native metadata and generating a hash-verified
+          collection manifest the moment data leaves the source.
+        </p>
+      </div>
+      <div class="module">
+        <div class="mod-id">MOD.03</div>
+        <h3>Privilege log generation</h3>
+        <p>
+          Privilege candidates are flagged, classified by basis (attorney-client,
+          work product, joint defense), and compiled into a draft log formatted
+          for production — attorneys review and approve, not build from zero.
+        </p>
+      </div>
+      <div class="module">
+        <div class="mod-id">MOD.04</div>
+        <h3>Chain of custody tracking</h3>
+        <p>
+          Every collection, transfer, review action, and redaction is recorded
+          in an immutable audit log — exportable as a defensibility report for
+          opposing counsel or the court.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section dark">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <span class="exhibit-num" style="color:var(--redact);">Exhibit C — The workflow</span>
+        <h2>From collection to production, in one pipeline.</h2>
+      </div>
+      <p class="desc">
+        Built around the seven-stage standard discovery pipeline — without the
+        handoffs between five different vendors.
+      </p>
+    </div>
+
+    <div class="workflow">
+      <div class="wf-step">
+        <span class="wf-num">STAGE 1</span>
+        <h4>Collect</h4>
+        <p>Custodian sources are identified and pulled automatically with a verified manifest.</p>
+      </div>
+      <div class="wf-step">
+        <span class="wf-num">STAGE 2</span>
+        <h4>Cull &amp; dedupe</h4>
+        <p>Date ranges, keywords, and custodians narrow the set before review begins.</p>
+      </div>
+      <div class="wf-step">
+        <span class="wf-num">STAGE 3</span>
+        <h4>Score &amp; flag</h4>
+        <p>Relevance, privilege, and PII are scored with reasoning attached to each call.</p>
+      </div>
+      <div class="wf-step">
+        <span class="wf-num">STAGE 4</span>
+        <h4>Review &amp; approve</h4>
+        <p>Attorneys confirm AI calls on the documents that matter most — nothing ships unreviewed.</p>
+      </div>
+      <div class="wf-step">
+        <span class="wf-num">STAGE 5</span>
+        <h4>Privilege log</h4>
+        <p>A formatted draft log is generated for every withheld or redacted document.</p>
+      </div>
+      <div class="wf-step">
+        <span class="wf-num">STAGE 6</span>
+        <h4>Redact</h4>
+        <p>PII and privileged content is redacted in-platform — no export to third-party tools.</p>
+      </div>
+      <div class="wf-step">
+        <span class="wf-num">STAGE 7</span>
+        <h4>Produce</h4>
+        <p>Final sets are exported in the format required by FRCP 34(b)(2)(E) and your protocol.</p>
+      </div>
+      <div class="wf-step">
+        <span class="wf-num">ALWAYS ON</span>
+        <h4>Audit trail</h4>
+        <p>Every step above writes to one immutable log, from first collection to final production.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="founder">
+  <div class="wrap">
+    <span class="exhibit-num">Exhibit F-1 — Founder</span>
+    <div class="founder">
+      <div class="founder-card">
+        <div class="founder-photo">DG</div>
+        <h3>Divanshu Garg</h3>
+        <div class="role">Founder &amp; CEO</div>
+        <div class="founder-meta">
+          <div><span>Focus</span><span>AI &amp; Legal Tech</span></div>
+          <div><span>Based</span><span>India</span></div>
+          <div><span>Company</span><span>Valerant</span></div>
+        </div>
+      </div>
+
+      <div class="founder-bio">
+        <p>
+          Divanshu Garg founded Valerant after seeing how much of the cost in
+          litigation comes down to people reading documents one at a time —
+          and how little of that reading actually requires a law degree to
+          get right the first time.
+        </p>
+        <p>
+          The thesis behind Valerant is narrow on purpose: instead of trying
+          to replace legal judgment, build the layer underneath it. AI reads
+          every document, scores it for relevance and privilege, drafts the
+          paperwork that follows from those calls, and keeps a record of
+          every decision — so the attorney's time goes to judgment calls,
+          not data entry.
+        </p>
+        <div class="pull-quote">
+          "A junior associate tagging documents at $500 an hour isn't
+          practicing law — they're doing pattern matching the firm happens
+          to bill at a lawyer's rate. Valerant does the pattern matching.
+          The lawyer still makes the call."
+        </div>
+        <p>
+          Valerant is built with the defensibility requirements of real
+          litigation in mind: every AI decision is explainable, every
+          override is logged, and nothing leaves the platform without
+          attorney sign-off. The goal isn't a black box that replaces
+          review — it's a system that makes review fast enough that cost
+          stops being the reason discovery gets scoped down.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section dark cta-band" id="contact">
+  <div class="wrap">
+    <span class="exhibit-num">Get started</span>
+    <h2>Put your next matter's review<br>on Valerant.</h2>
+    <p>
+      Talk to our team about a pilot on an active or closed matter — we'll
+      benchmark against your last review's cost and timeline.
+    </p>
+    <div class="hero-actions">
+      <a href="mailto:divanshu@valerant.ai" class="btn btn-primary">Request a demo</a>
+      <a href="#founder" class="btn btn-ghost">Meet the founder</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-grid">
+    <div class="logo" style="font-size:1.1rem;">valerant<span class="dot">.</span></div>
+    <div class="footer-links">
+      <a href="#top">Home</a>
+      <a href="#platform">Platform</a>
+      <a href="#founder">Founder</a>
+      <a href="mailto:divanshu@valerant.ai">Contact</a>
+    </div>
+    <div>© 2026 Valerant. AI-assisted, attorney-verified.</div>
+  </div>
+</footer>
+
+<script>
+document.getElementById('navToggle').addEventListener('click', function(){
+  document.getElementById('navLinks').classList.toggle('open');
+});
+</script>
+</body>
+</html>
